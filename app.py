@@ -501,6 +501,125 @@ def render_assessment():
     # Premium features reminder
     st.info("💎 **After this assessment, you'll get:** Top 3 curated programmes • 5 career paths with UK salaries • ROI calculator • Scholarship opportunities")
     
+    # NEW: Optional text box for achievements/experience
+    st.markdown("---")
+    st.markdown("### 📄 Boost Your Profile (Optional)")
+    
+    tab1, tab2 = st.tabs(["✍️ Type Your Experience", "📎 Upload CV"])
+    
+    with tab1:
+        st.markdown("""
+        <div style="background: #f8f9fa; padding: 1rem; border-radius: 10px; margin-bottom: 1rem;">
+            <p style="color: #717171; font-size: 0.95rem; margin: 0;">
+                Share your achievements, projects, or work experience to get more accurate recommendations.
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        user_text = st.text_area(
+            "Your achievements, projects, or experience",
+            placeholder="""Example: "Built a website for a local charity using HTML/CSS. Worked part-time at Tesco for 6 months. Captain of school football team for 2 years. Completed a 10km charity run."
+            
+Tell us about:
+• Projects you've built or created
+• Work experience (part-time jobs, internships)
+• Leadership roles (captain, prefect, club president)
+• Awards or achievements
+• Skills you've developed
+• Challenges you've overcome""",
+            height=200,
+            key="user_achievements_text",
+            help="We'll analyze this to better understand your hands-on skills, perseverance, and leadership"
+        )
+        
+        if user_text and len(user_text.strip()) > 20:
+            # Show quick preview
+            from modules.cv_analyzer import get_cv_insights
+            
+            with st.spinner("Analyzing your experience..."):
+                cv_analysis = get_cv_insights(user_text)
+                
+                if cv_analysis['total_matches'] > 0:
+                    st.success(f"✅ Found {cv_analysis['total_matches']} relevant skills/experiences!")
+                    
+                    with st.expander("🔍 What we detected"):
+                        for insight in cv_analysis['insights'][:3]:
+                            category = insight['category'].replace('_', ' ').title()
+                            examples = ', '.join(insight['examples'][:3])
+                            st.write(f"**{category}:** {examples}")
+                else:
+                    st.info("💡 Tip: Include words like 'built', 'led', 'created', or 'worked at' for better analysis")
+            
+            # Store for later
+            st.session_state['user_achievements_text'] = user_text
+    
+    with tab2:
+        st.markdown("""
+        <div style="background: #f8f9fa; padding: 1rem; border-radius: 10px; margin-bottom: 1rem;">
+            <p style="color: #717171; font-size: 0.95rem; margin: 0;">
+                Upload your CV (PDF or Word) and we'll automatically extract your skills and experience.
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        uploaded_file = st.file_uploader(
+            "Choose your CV file",
+            type=['pdf', 'docx', 'doc'],
+            help="We'll extract text from your CV to analyze your skills and experience. Your file is processed securely and not stored.",
+            key="cv_upload"
+        )
+        
+        if uploaded_file:
+            try:
+                # Extract text from uploaded file
+                if uploaded_file.name.endswith('.pdf'):
+                    import PyPDF2
+                    from io import BytesIO
+                    
+                    pdf_reader = PyPDF2.PdfReader(BytesIO(uploaded_file.read()))
+                    cv_text = ""
+                    for page in pdf_reader.pages:
+                        cv_text += page.extract_text()
+                
+                elif uploaded_file.name.endswith(('.docx', '.doc')):
+                    from docx import Document
+                    from io import BytesIO
+                    
+                    doc = Document(BytesIO(uploaded_file.read()))
+                    cv_text = "\n".join([paragraph.text for paragraph in doc.paragraphs])
+                
+                if cv_text and len(cv_text.strip()) > 50:
+                    st.success(f"✅ CV uploaded! Extracted {len(cv_text.split())} words")
+                    
+                    # Analyze the CV
+                    from modules.cv_analyzer import get_cv_insights
+                    
+                    with st.spinner("Analyzing your CV..."):
+                        cv_analysis = get_cv_insights(cv_text)
+                        
+                        if cv_analysis['total_matches'] > 0:
+                            st.success(f"🎯 Found {cv_analysis['total_matches']} relevant skills/experiences in your CV!")
+                            
+                            with st.expander("🔍 Key skills detected"):
+                                for insight in cv_analysis['insights'][:5]:
+                                    category = insight['category'].replace('_', ' ').title()
+                                    score = insight['score']
+                                    examples = ', '.join(insight['examples'][:3])
+                                    st.write(f"**{category}** ({score}/10): {examples}")
+                        else:
+                            st.warning("We couldn't detect many skills. Your CV might be in an unusual format. Try the text box instead!")
+                    
+                    # Store extracted text
+                    st.session_state['user_achievements_text'] = cv_text
+                else:
+                    st.error("Could not extract text from this file. Please try a different format or use the text box.")
+                    
+            except Exception as e:
+                st.error(f"Error processing file: {str(e)}")
+                st.info("💡 Try using the text box instead, or upload a different CV format")
+    
+    st.markdown("---")
+    
     assessment = PsychometricAssessment()
     
     with st.form("psychometric_form"):
@@ -520,14 +639,35 @@ def render_assessment():
         submitted = st.form_submit_button("📊 Get My Results", type="primary", width='stretch')
         
         if submitted:
-            scores = assessment.calculate_scores(responses)
-            st.session_state.assessment_scores = scores
+            # Calculate base quiz scores
+            base_scores = assessment.calculate_scores(responses)
+            
+            # Check if user provided additional text
+            user_text = st.session_state.get('user_achievements_text', '')
+            
+            if user_text and len(user_text.strip()) > 20:
+                # Merge quiz scores with CV text analysis
+                from modules.cv_analyzer import merge_cv_with_quiz
+                
+                merged_scores, cv_analysis = merge_cv_with_quiz(base_scores, user_text)
+                
+                # Store both for results page
+                st.session_state.assessment_scores = merged_scores
+                st.session_state.cv_analysis = cv_analysis
+                st.session_state.used_text_boost = True
+            else:
+                # Just use quiz scores
+                st.session_state.assessment_scores = base_scores
+                st.session_state.cv_analysis = None
+                st.session_state.used_text_boost = False
+            
             st.session_state.assessment_complete = True
             
             # Track assessment completion
             track_event('assessment_completed', {
-                'grit_score': str(scores['grit']),
-                'hands_on_score': str(scores['hands_on'])
+                'grit_score': str(st.session_state.assessment_scores['grit']),
+                'hands_on_score': str(st.session_state.assessment_scores['hands_on']),
+                'text_analysis_used': str(st.session_state.get('used_text_boost', False))
             })
             
             st.rerun()
@@ -557,6 +697,18 @@ def render_results():
     
     # Psychometric Profile
     st.markdown("### 📊 Your Psychometric Profile")
+    
+    # Show if text analysis was used
+    if st.session_state.get('used_text_boost', False):
+        st.markdown("""
+        <div style="background: #e8f5e9; padding: 1rem; border-radius: 10px; border-left: 4px solid #4caf50; margin-bottom: 1rem;">
+            <strong>✨ Enhanced Profile</strong><br>
+            <span style="color: #717171; font-size: 0.9rem;">
+                We analyzed your achievements and experience to give you more accurate scores below.
+            </span>
+        </div>
+        """, unsafe_allow_html=True)
+    
     col1, col2, col3, col4 = st.columns(4)
     with col1:
         st.metric("Grit", f"{scores['grit']}/10")
@@ -566,6 +718,28 @@ def render_results():
         st.metric("Structure Need", f"{scores['structure']}/10")
     with col4:
         st.metric("Risk Tolerance", f"{scores['risk_tolerance']}/10")
+    
+    # Show insights from CV analysis if available
+    if st.session_state.get('cv_analysis') and st.session_state.cv_analysis['total_matches'] > 0:
+        with st.expander("🔍 What We Found in Your Experience", expanded=False):
+            cv_analysis = st.session_state.cv_analysis
+            
+            st.markdown("Based on your text, we detected:")
+            
+            for insight in cv_analysis['insights'][:5]:
+                category = insight['category'].replace('_', ' ').title()
+                level = insight['level'].title()
+                score = insight['score']
+                examples = insight['examples'][:3]
+                
+                st.markdown(f"""
+                <div style="background: #f8f9fa; padding: 0.75rem; border-radius: 8px; margin: 0.5rem 0;">
+                    <strong>{category}:</strong> {level} ({score}/10)<br>
+                    <span style="color: #717171; font-size: 0.85rem;">
+                        Keywords: {', '.join(examples)}
+                    </span>
+                </div>
+                """, unsafe_allow_html=True)
     
     # Get recommendation
     recommender = RecommendationEngine()
