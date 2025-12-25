@@ -875,6 +875,72 @@ def render_results():
     
     # ============= EMAIL CAPTURE - MORE PROMINENT =============
     st.markdown("---")
+    
+    # NEW: Outcome tracking opt-in (THE MOAT)
+    st.markdown("""
+    <div style="background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); padding: 2.5rem 2rem; border-radius: 20px; text-align: center; margin: 2rem 0; box-shadow: 0 4px 20px rgba(76, 175, 80, 0.4);">
+        <h3 style="color: white; font-size: 1.8rem; margin-bottom: 0.75rem; font-weight: 600;">
+            📊 Help Future Students (And Win £100!)
+        </h3>
+        <p style="color: rgba(255,255,255,0.95); font-size: 1.1rem; margin-bottom: 1rem;">
+            Check back in 6 months and tell us how your pathway choice worked out
+        </p>
+        <div style="background: rgba(255,255,255,0.15); padding: 1.5rem; border-radius: 12px; margin: 1rem 0;">
+            <div style="color: white; font-size: 0.95rem; line-height: 1.8;">
+                <strong>Why this matters:</strong> Your real outcomes help us build the UK's first 
+                <em>evidence-based</em> pathway recommendation system.<br><br>
+                
+                <strong>What we'll ask:</strong> Did you follow our recommendation? How's it going? 
+                Current salary/satisfaction?<br><br>
+                
+                <strong>What you get:</strong><br>
+                • See how your outcome compares to others like you<br>
+                • Early access to our "Jobs of the Future" predictor<br>
+                • Entered to win £100 Amazon voucher (drawn monthly)<br>
+                • Help thousands of future students make better decisions
+            </div>
+        </div>
+    """, unsafe_allow_html=True)
+    
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        outcome_tracking_consent = st.checkbox(
+            "✓ Yes, follow up with me in 6 months to track my outcome",
+            value=True,  # Default checked
+            key="outcome_tracking_consent"
+        )
+        
+        st.markdown("""
+        <div style="font-size: 0.75rem; color: rgba(255,255,255,0.8); margin-top: 0.5rem; text-align: center;">
+            Takes 2 minutes • Your data helps future students • Completely optional
+        </div>
+        """, unsafe_allow_html=True)
+        
+        if outcome_tracking_consent:
+            st.success("✅ We'll email you in 6 months (you can unsubscribe anytime)")
+            
+            # Store outcome tracking consent
+            from modules.outcome_tracker import OutcomeTracker, capture_initial_decision
+            
+            tracker = OutcomeTracker()
+            
+            # Capture initial state for future comparison
+            tracking_data = tracker.capture_initial_decision(
+                user_data=user_data,
+                assessment_scores=scores,
+                recommendation=recommendation,
+                roi_data=roi_data
+            )
+            
+            # Store in session state (will be sent to Google Sheets)
+            st.session_state['outcome_tracking_data'] = tracking_data
+            st.session_state['outcome_tracking_consent'] = True
+    
+    st.markdown("""
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.markdown("---")
     st.markdown("""
     <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 3rem 2rem; border-radius: 20px; text-align: center; margin: 2rem 0;">
         <h3 style="color: white; font-size: 2rem; margin-bottom: 1rem;">
@@ -918,8 +984,24 @@ def render_results():
         
         if st.button("📨 Email Me My Full Report", type="primary", width='stretch', key="send_report"):
             if not results_consent:
-                st.error("Please agree to receive your report to continue")
+                st.error("Please agree to receive your report")
             elif email and "@" in email:
+                # Prepare outcome tracking data if user consented
+                outcome_consent = st.session_state.get('outcome_tracking_consent', False)
+                tracking_info = ""
+                
+                if outcome_consent and 'outcome_tracking_data' in st.session_state:
+                    tracking_data = st.session_state['outcome_tracking_data']
+                    tracking_info = json.dumps({
+                        'outcome_tracking': True,
+                        'predicted_roi': tracking_data.get('predicted_roi', 0),
+                        'predicted_salary': tracking_data.get('predicted_salary_year_5', 0),
+                        'follow_up_6mo': tracking_data.get('follow_up_6_months', ''),
+                        'profile': f"Grit:{tracking_data.get('grit_score')},HandsOn:{tracking_data.get('hands_on_score')}"
+                    })
+                else:
+                    tracking_info = json.dumps({'outcome_tracking': False})
+                
                 # Capture to Google Sheets with full context and consent
                 success = capture_email_to_sheet(
                     email=email,
@@ -927,11 +1009,15 @@ def render_results():
                     interest=user_data['interests'][0] if user_data.get('interests') else '',
                     budget=str(user_data.get('budget', '')),
                     capture_point="results_page_with_consent",
-                    recommended_pathway=f"{recommendation['pathway']} | Consent: {results_consent}, Marketing: {results_marketing}",
-                    roi_result=f"£{recommended_roi['net_wealth_year_5']:,.0f}"
+                    recommended_pathway=f"{recommendation['pathway']} | Consent: {results_consent}, Marketing: {results_marketing}, Outcome: {outcome_consent}",
+                    roi_result=f"£{recommended_roi['net_wealth_year_5']:,.0f} | Tracking: {tracking_info}"
                 )
                 
                 st.success("✅ Report sent! Check your inbox in the next few minutes.")
+                
+                if outcome_consent:
+                    st.info("📅 We'll follow up in 6 months to track your outcome (helps future students!)")
+                
                 st.balloons()
                 st.session_state['user_email'] = email
                 st.session_state['marketing_consent'] = results_marketing
@@ -939,7 +1025,8 @@ def render_results():
                 # Track email capture event
                 track_event('email_captured', {
                     'capture_point': 'results_page',
-                    'marketing_consent': str(results_marketing)
+                    'marketing_consent': str(results_marketing),
+                    'outcome_tracking': str(outcome_consent)
                 })
                 
                 if not success:
