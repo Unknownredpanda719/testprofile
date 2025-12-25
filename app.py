@@ -352,6 +352,81 @@ def render_hero_landing():
         else:
             st.error("Please fill in all fields")
     
+    # ============= EMAIL CAPTURE - TOP OF PAGE =============
+    st.markdown("<br>", unsafe_allow_html=True)
+    st.markdown("""
+    <div style="max-width: 1200px; margin: 2rem auto; padding: 0 4rem;">
+        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 2.5rem 2rem; border-radius: 20px; text-align: center; box-shadow: 0 4px 20px rgba(102, 126, 234, 0.4);">
+            <h3 style="color: white; font-size: 1.6rem; margin-bottom: 0.75rem; font-weight: 600;">
+                📧 Get Your Free Results + Curated Programme List
+            </h3>
+            <p style="color: rgba(255,255,255,0.9); font-size: 1rem; margin-bottom: 1.5rem;">
+                Save your spot and receive your personalized pathway recommendations via email
+            </p>
+    """, unsafe_allow_html=True)
+    
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        early_email = st.text_input(
+            "Email",
+            placeholder="your.email@example.com",
+            label_visibility="collapsed",
+            key="early_email_capture_top"
+        )
+        
+        # GDPR Consent Checkboxes
+        email_consent_top = st.checkbox(
+            "✓ I agree to receive my assessment results and programme recommendations",
+            key="landing_email_consent_top"
+        )
+        
+        marketing_consent_top = st.checkbox(
+            "Send me scholarship opportunities and application deadlines (optional)",
+            key="landing_marketing_consent_top"
+        )
+        
+        st.markdown("""
+        <div style="font-size: 0.75rem; color: rgba(255,255,255,0.8); margin-top: 0.5rem; text-align: center;">
+            <a href="#privacy-policy" style="color: #fff; text-decoration: underline;">Privacy Policy</a> • 
+            Unsubscribe anytime • We never sell your data
+        </div>
+        """, unsafe_allow_html=True)
+        
+        if st.button("✨ Save My Spot", type="primary", width='stretch', key="email_submit_top"):
+            if not email_consent_top:
+                st.error("Please agree to receive your assessment results")
+            elif early_email and "@" in early_email:
+                # Capture to Google Sheets with consent flags
+                success = capture_email_to_sheet(
+                    email=early_email,
+                    name=name if name else "",
+                    interest=interest_input if interest_input else "",
+                    budget=budget_input if budget_input else "",
+                    capture_point="landing_page_top",
+                    recommended_pathway=f"Consent: {email_consent_top}, Marketing: {marketing_consent_top}",
+                    roi_result=""
+                )
+                
+                st.session_state['user_email'] = early_email
+                st.session_state['marketing_consent'] = marketing_consent_top
+                st.success("✅ Saved! Now fill in the search bar above and click 🔍 Search to start")
+                
+                # Track email capture
+                track_event('email_captured', {
+                    'capture_point': 'landing_page_top',
+                    'marketing_consent': str(marketing_consent_top)
+                })
+                
+                if not success:
+                    st.warning("Note: Email saved locally but may not have synced to our system")
+            else:
+                st.error("Please enter a valid email")
+    
+    st.markdown("""
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+    
     # Stats
     st.markdown("""
     <div style="max-width: 1200px; margin: 4rem auto 2rem auto; padding: 0 2rem;">
@@ -369,78 +444,6 @@ def render_hero_landing():
     
     with col3:
         st.markdown('<div style="padding: 1rem;"><div style="font-size: 2.5rem; font-weight: 600; color: #222222; margin-bottom: 0.5rem;">3 min</div><div style="font-size: 1rem; color: #222222; font-weight: 500;">To get your results</div><div style="font-size: 0.9rem; color: #717171;">complete assessment time</div></div>', unsafe_allow_html=True)
-    
-    # Email capture section BEFORE assessment
-    st.markdown("<br><br>", unsafe_allow_html=True)
-    st.markdown("""
-    <div style="max-width: 1200px; margin: 3rem auto; padding: 0 2rem;">
-        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 3rem; border-radius: 20px; text-align: center;">
-            <h3 style="color: white; font-size: 1.8rem; margin-bottom: 1rem;">
-                Get Your Free Assessment + Curated Programme List
-            </h3>
-            <p style="color: rgba(255,255,255,0.9); font-size: 1.1rem; margin-bottom: 2rem;">
-                Enter your email to save your results and receive personalized programme recommendations
-            </p>
-    """, unsafe_allow_html=True)
-    
-    col1, col2, col3 = st.columns([1, 2, 1])
-    with col2:
-        early_email = st.text_input(
-            "Email",
-            placeholder="your.email@example.com",
-            label_visibility="collapsed",
-            key="early_email_capture"
-        )
-        
-        # GDPR Consent Checkboxes
-        email_consent = st.checkbox(
-            "I agree to receive my assessment results and educational programme recommendations via email",
-            key="landing_email_consent"
-        )
-        
-        marketing_consent = st.checkbox(
-            "I'd like to receive scholarship opportunities and education news (optional)",
-            key="landing_marketing_consent"
-        )
-        
-        st.markdown("""
-        <div style="font-size: 0.75rem; color: #717171; margin-top: 0.5rem;">
-            By submitting, you agree to our <a href="#privacy-policy" style="color: #4fc3f7;">Privacy Policy</a>. 
-            You can unsubscribe anytime. We never sell your data.
-        </div>
-        """, unsafe_allow_html=True)
-        
-        if st.button("✨ Get Started Free", type="primary", width='stretch', key="email_submit"):
-            if not email_consent:
-                st.error("Please agree to receive your assessment results to continue")
-            elif early_email and "@" in early_email:
-                # Capture to Google Sheets with consent flags
-                success = capture_email_to_sheet(
-                    email=early_email,
-                    name=name if name else "",
-                    interest=interest_input if interest_input else "",
-                    budget=budget_input if budget_input else "",
-                    capture_point="landing_page_with_consent",
-                    recommended_pathway=f"Consent: {email_consent}, Marketing: {marketing_consent}",
-                    roi_result=""
-                )
-                
-                st.session_state['user_email'] = early_email
-                st.session_state['marketing_consent'] = marketing_consent
-                st.success("✅ Email saved! Scroll up to start your assessment")
-                
-                if not success:
-                    st.warning("Note: Email saved locally but may not have synced to our system")
-            else:
-                st.error("Please enter a valid email")
-    
-    st.markdown("""
-            <p style="color: rgba(255,255,255,0.8); font-size: 0.85rem; margin-top: 1rem;">
-                No spam. Unsubscribe anytime. We'll send you your full report + scholarship opportunities.
-            </p>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
     
     # Programme Preview Section
     st.markdown("<br><br>", unsafe_allow_html=True)
