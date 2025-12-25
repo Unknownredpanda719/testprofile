@@ -19,7 +19,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS for better UX
+# Custom CSS - Airbnb style
 st.markdown("""
 <style>
     /* Hide Streamlit branding */
@@ -27,151 +27,149 @@ st.markdown("""
     footer {visibility: hidden;}
     header {visibility: hidden;}
     
-    /* Remove default padding */
-    .block-container {
-        padding-top: 2rem;
-        padding-bottom: 2rem;
+    /* Airbnb font system */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    
+    * {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     }
     
-    /* Main typography */
+    /* Remove default padding */
+    .block-container {
+        padding-top: 1rem;
+        padding-bottom: 2rem;
+        max-width: 100%;
+    }
+    
+    /* Airbnb color palette */
+    :root {
+        --airbnb-red: #FF385C;
+        --airbnb-black: #222222;
+        --airbnb-gray: #717171;
+        --airbnb-light-gray: #EBEBEB;
+    }
+    
+    /* Typography */
     .main-header {
-        font-size: 2.5rem;
-        font-weight: 700;
-        color: #1f77b4;
+        font-size: 2rem;
+        font-weight: 600;
+        color: #222222;
         margin-bottom: 0.5rem;
+        letter-spacing: -0.02em;
     }
     .sub-header {
-        font-size: 1.2rem;
-        color: #666;
+        font-size: 1rem;
+        color: #717171;
+        font-weight: 400;
         margin-bottom: 2rem;
     }
     
-    /* Input styling */
-    .stTextInput > div > div > input {
-        font-size: 1.1rem;
-        padding: 1rem;
-        border-radius: 10px;
-        border: 2px solid #e0e0e0;
-        transition: all 0.3s ease;
-    }
-    .stTextInput > div > div > input:focus {
-        border-color: #667eea;
-        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    /* Input styling - Airbnb search bar style */
+    .stTextInput > div > div > input,
+    .stSelectbox > div > div > div {
+        border: none !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        font-size: 0.9rem !important;
+        color: #222222 !important;
+        padding: 0.5rem 1rem !important;
+        background: transparent !important;
     }
     
+    .stTextInput > div > div > input:focus,
+    .stSelectbox > div > div > div:focus {
+        border: none !important;
+        box-shadow: none !important;
+    }
+    
+    .stTextInput > div > div > input::placeholder {
+        color: #717171 !important;
+        font-weight: 400 !important;
+    }
+    
+    /* Remove selectbox arrow styling */
     .stSelectbox > div > div {
-        font-size: 1.1rem;
-        padding: 0.5rem;
-        border-radius: 10px;
-        border: 2px solid #e0e0e0;
-        transition: all 0.3s ease;
+        background: transparent !important;
+        border: none !important;
     }
     
-    .stSelectbox > div > div:hover {
-        border-color: #667eea;
-    }
-    
-    /* Button styling */
+    /* Button styling - Airbnb primary button */
     .stButton > button {
-        font-size: 1.2rem;
-        font-weight: 600;
-        padding: 1rem 2rem;
-        border-radius: 10px;
-        border: none;
-        transition: all 0.3s ease;
-        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
-    }
-    .stButton > button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+        background: linear-gradient(to right, #E61E4D 0%, #E31C5F 50%, #D70466 100%) !important;
+        color: white !important;
+        font-size: 1rem !important;
+        font-weight: 600 !important;
+        padding: 0.8rem 1.5rem !important;
+        border-radius: 8px !important;
+        border: none !important;
+        transition: all 0.2s ease !important;
+        box-shadow: none !important;
     }
     
-    /* Warning/Success boxes */
+    .stButton > button:hover {
+        background: linear-gradient(to right, #D70466 0%, #BD1E59 50%, #BD1E59 100%) !important;
+        transform: scale(1.02) !important;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.18) !important;
+    }
+    
+    /* Warning/Success boxes - minimal Airbnb style */
     .warning-box {
         padding: 1.5rem;
-        border-left: 4px solid #ff4444;
-        background-color: #fff3f3;
+        border: 1px solid #FFCDD2;
+        background-color: #FFEBEE;
         margin: 1.5rem 0;
-        border-radius: 8px;
-        animation: slideIn 0.5s ease;
+        border-radius: 12px;
     }
     .success-box {
         padding: 1.5rem;
-        border-left: 4px solid #44ff44;
-        background-color: #f3fff3;
+        border: 1px solid #C8E6C9;
+        background-color: #E8F5E9;
         margin: 1.5rem 0;
-        border-radius: 8px;
-        animation: slideIn 0.5s ease;
+        border-radius: 12px;
     }
     
-    /* Animations */
-    @keyframes slideIn {
-        from {
-            opacity: 0;
-            transform: translateY(-10px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-    
-    @keyframes fadeIn {
-        from { opacity: 0; }
-        to { opacity: 1; }
-    }
-    
-    @keyframes pulse {
-        0%, 100% { transform: scale(1); }
-        50% { transform: scale(1.05); }
-    }
-    
-    /* Metric cards */
-    .metric-card {
-        background-color: #f0f2f6;
-        padding: 1.5rem;
-        border-radius: 10px;
-        margin: 0.5rem 0;
-        transition: transform 0.3s ease;
-    }
-    
-    .metric-card:hover {
-        transform: translateY(-5px);
-    }
-    
-    /* Radio buttons */
+    /* Radio buttons - clean style */
     .stRadio > div {
         background: white;
         padding: 1rem;
-        border-radius: 8px;
-        border: 2px solid #e0e0e0;
-        transition: all 0.3s ease;
+        border-radius: 12px;
+        border: 1px solid #EBEBEB;
+        transition: all 0.2s ease;
     }
     .stRadio > div:hover {
-        border-color: #667eea;
-        box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);
+        border-color: #222222;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.08);
     }
     
-    /* Table styling */
-    table {
-        animation: fadeIn 0.8s ease;
+    /* Remove all gradients and excessive shadows */
+    .metric-card {
+        background-color: white;
+        padding: 1.5rem;
+        border-radius: 12px;
+        border: 1px solid #EBEBEB;
+        margin: 0.5rem 0;
     }
     
-    /* Testimonial cards */
-    .testimonial-card {
-        animation: fadeIn 1s ease;
-    }
-    
-    /* Link styling */
+    /* Links - Airbnb style */
     a {
-        color: #667eea;
-        text-decoration: none;
-        transition: all 0.3s ease;
+        color: #222222;
+        text-decoration: underline;
+        transition: all 0.2s ease;
     }
     
     a:hover {
-        color: #764ba2;
-        text-decoration: underline;
+        color: #717171;
+    }
+    
+    /* Clean, minimal animations */
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* Remove all purple/blue colors */
+    div[data-testid="stMetricValue"] {
+        color: #222222 !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -372,6 +370,282 @@ def render_results():
         st.rerun()
 
 def render_hero_landing():
+    """Render Airbnb-style clean, minimal landing page"""
+    
+    # Airbnb-style hero with minimal design
+    st.markdown("""
+    <div style="
+        background: white;
+        text-align: left; 
+        padding: 3rem 4rem 2rem 4rem;
+        max-width: 1200px;
+        margin: 0 auto;
+    ">
+        <h1 style="
+            font-size: 3.2rem; 
+            font-weight: 600; 
+            margin-bottom: 0.5rem; 
+            color: #222222;
+            letter-spacing: -0.02em;
+            line-height: 1.1;
+        ">
+            Not all education is<br>created equal
+        </h1>
+        <p style="
+            font-size: 1.1rem; 
+            color: #717171; 
+            margin-bottom: 0;
+            font-weight: 400;
+        ">
+            Discover the path that maximizes your ROI, not university revenue.
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Airbnb-style search bar (combined input style)
+    st.markdown("""
+    <div style="max-width: 1200px; margin: 2rem auto; padding: 0 4rem;">
+        <div style="
+            background: white;
+            border: 1px solid #DDDDDD;
+            border-radius: 40px;
+            padding: 0.5rem;
+            box-shadow: 0 3px 12px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        ">
+    """, unsafe_allow_html=True)
+    
+    col1, col2, col3, col4 = st.columns([2.5, 2.5, 2.5, 1.5])
+    
+    with col1:
+        st.markdown("""
+        <div style="padding: 0.5rem 0 0 1rem;">
+            <div style="font-size: 0.75rem; font-weight: 700; color: #222222; margin-bottom: 0.2rem;">NAME</div>
+        </div>
+        """, unsafe_allow_html=True)
+        name = st.text_input(
+            "Name",
+            placeholder="Add your name",
+            label_visibility="collapsed",
+            key="hero_name"
+        )
+    
+    with col2:
+        st.markdown("""
+        <div style="padding: 0.5rem 0 0 1rem; border-left: 1px solid #DDDDDD;">
+            <div style="font-size: 0.75rem; font-weight: 700; color: #222222; margin-bottom: 0.2rem;">INTEREST</div>
+        </div>
+        """, unsafe_allow_html=True)
+        interest_options = [
+            "Technology & Software",
+            "Business & Finance",
+            "Healthcare & Medicine",
+            "Engineering & Manufacturing",
+            "Creative Arts & Design",
+            "Education & Social Services",
+            "Science & Research",
+            "Trades & Construction"
+        ]
+        interest_input = st.selectbox(
+            "Interest",
+            [""] + interest_options,
+            format_func=lambda x: "Add field of interest" if x == "" else x,
+            label_visibility="collapsed"
+        )
+    
+    with col3:
+        st.markdown("""
+        <div style="padding: 0.5rem 0 0 1rem; border-left: 1px solid #DDDDDD;">
+            <div style="font-size: 0.75rem; font-weight: 700; color: #222222; margin-bottom: 0.2rem;">BUDGET</div>
+        </div>
+        """, unsafe_allow_html=True)
+        budget_options = [
+            ("Under $10,000", 8000),
+            ("$10,000 - $30,000", 20000),
+            ("$30,000 - $50,000", 40000),
+            ("$50,000 - $100,000", 75000),
+            ("Over $100,000", 120000)
+        ]
+        budget_input = st.selectbox(
+            "Budget",
+            [""] + [b[0] for b in budget_options],
+            format_func=lambda x: "Add budget range" if x == "" else x,
+            label_visibility="collapsed"
+        )
+    
+    with col4:
+        st.markdown("<br>", unsafe_allow_html=True)
+        search_clicked = st.button(
+            "🔍 Search",
+            type="primary",
+            use_container_width=True,
+            key="search_btn"
+        )
+    
+    st.markdown("</div></div>", unsafe_allow_html=True)
+    
+    # Handle search
+    if search_clicked:
+        if name and interest_input and budget_input:
+            budget_map = dict(budget_options)
+            st.session_state.user_data = {
+                'name': name,
+                'age': 20,
+                'budget': budget_map.get(budget_input, 20000),
+                'current_income': 0,
+                'interests': [interest_input],
+                'target_country': 'USA'
+            }
+            st.rerun()
+        else:
+            st.error("Please fill in all fields")
+    
+    # Featured categories (Airbnb style)
+    st.markdown("""
+    <div style="max-width: 1200px; margin: 4rem auto 2rem auto; padding: 0 4rem;">
+        <h2 style="font-size: 1.4rem; font-weight: 600; color: #222222; margin-bottom: 1.5rem;">
+            Explore education pathways
+        </h2>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    col1, col2, col3, col4 = st.columns(4)
+    
+    categories = [
+        ("🎓", "University", "Traditional 4-year degrees"),
+        ("🔧", "Apprenticeships", "Earn while you learn"),
+        ("⚡", "Bootcamps", "Fast-track to employment"),
+        ("🏠", "Local College", "Stay close to home")
+    ]
+    
+    for col, (emoji, title, desc) in zip([col1, col2, col3, col4], categories):
+        with col:
+            st.markdown(f"""
+            <div style="
+                cursor: pointer;
+                transition: transform 0.2s;
+                padding: 1rem;
+            " onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='translateY(0)'">
+                <div style="font-size: 2rem; margin-bottom: 0.5rem;">{emoji}</div>
+                <div style="font-size: 1rem; font-weight: 600; color: #222222; margin-bottom: 0.3rem;">{title}</div>
+                <div style="font-size: 0.85rem; color: #717171;">{desc}</div>
+            </div>
+            """, unsafe_allow_html=True)
+    
+    # Clean divider
+    st.markdown("""
+    <div style="max-width: 1200px; margin: 3rem auto; padding: 0 4rem;">
+        <hr style="border: none; border-top: 1px solid #EBEBEB;">
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Simple stats section (Airbnb style - minimal)
+    st.markdown("""
+    <div style="max-width: 1200px; margin: 2rem auto; padding: 0 4rem;">
+        <h2 style="font-size: 1.4rem; font-weight: 600; color: #222222; margin-bottom: 2rem;">
+            Why students choose us
+        </h2>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        st.markdown("""
+        <div style="padding: 1rem 0;">
+            <div style="font-size: 2.5rem; font-weight: 600; color: #222222; margin-bottom: 0.5rem;">$47K+</div>
+            <div style="font-size: 1rem; color: #222222; margin-bottom: 0.3rem; font-weight: 500;">Average ROI improvement</div>
+            <div style="font-size: 0.9rem; color: #717171;">compared to default choice</div>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col2:
+        st.markdown("""
+        <div style="padding: 1rem 0;">
+            <div style="font-size: 2.5rem; font-weight: 600; color: #222222; margin-bottom: 0.5rem;">847</div>
+            <div style="font-size: 1rem; color: #222222; margin-bottom: 0.3rem; font-weight: 500;">Students saved from debt</div>
+            <div style="font-size: 0.9rem; color: #717171;">who would've gone $30k+ in debt</div>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col3:
+        st.markdown("""
+        <div style="padding: 1rem 0;">
+            <div style="font-size: 2.5rem; font-weight: 600; color: #222222; margin-bottom: 0.5rem;">3 min</div>
+            <div style="font-size: 1rem; color: #222222; margin-bottom: 0.3rem; font-weight: 500;">To get your results</div>
+            <div style="font-size: 0.9rem; color: #717171;">complete assessment time</div>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    # Divider
+    st.markdown("""
+    <div style="max-width: 1200px; margin: 3rem auto; padding: 0 4rem;">
+        <hr style="border: none; border-top: 1px solid #EBEBEB;">
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Testimonials - Airbnb review style
+    st.markdown("""
+    <div style="max-width: 1200px; margin: 2rem auto 3rem auto; padding: 0 4rem;">
+        <h2 style="font-size: 1.4rem; font-weight: 600; color: #222222; margin-bottom: 2rem;">
+            Reviews from students
+        </h2>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    col1, col2, col3 = st.columns(3)
+    
+    reviews = [
+        {
+            "stars": "★★★★★",
+            "text": "I was about to take out $80k in loans. This platform showed me I'd be in debt for 15 years. Chose local college instead - graduated debt-free.",
+            "name": "Marcus",
+            "date": "December 2024"
+        },
+        {
+            "stars": "★★★★★",
+            "text": "The assessment revealed I'm hands-on. Recommended apprenticeship over university. Now earning $65k with zero debt.",
+            "name": "Sarah",
+            "date": "November 2024"
+        },
+        {
+            "stars": "★★★★★",
+            "text": "ROI calculator was eye-opening. Dream degree would cost more than I'd earn. Did bootcamp instead - now making $95k.",
+            "name": "Priya",
+            "date": "October 2024"
+        }
+    ]
+    
+    for col, review in zip([col1, col2, col3], reviews):
+        with col:
+            st.markdown(f"""
+            <div style="padding: 1.5rem; border: 1px solid #EBEBEB; border-radius: 12px; background: white;">
+                <div style="color: #222222; margin-bottom: 1rem;">{review['stars']}</div>
+                <p style="font-size: 0.95rem; color: #222222; line-height: 1.5; margin-bottom: 1rem;">
+                    "{review['text']}"
+                </p>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <div style="font-size: 0.9rem; font-weight: 600; color: #222222;">{review['name']}</div>
+                        <div style="font-size: 0.85rem; color: #717171;">{review['date']}</div>
+                    </div>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+    
+    # Footer CTA - minimal
+    st.markdown("""
+    <div style="max-width: 1200px; margin: 4rem auto 2rem auto; padding: 0 4rem; text-align: center;">
+        <h2 style="font-size: 2.2rem; font-weight: 600; color: #222222; margin-bottom: 1rem;">
+            Ready to find your path?
+        </h2>
+        <p style="font-size: 1.1rem; color: #717171; margin-bottom: 2rem;">
+            Take the 3-minute assessment
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
     """Render search engine-style hero landing page with all bells and whistles"""
     
     # Hero Section with gradient background
