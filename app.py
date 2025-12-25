@@ -3,6 +3,8 @@ import pandas as pd
 import plotly.graph_objects as go
 from pathlib import Path
 import sys
+import requests
+import json
 
 # Add modules to path
 sys.path.append(str(Path(__file__).parent))
@@ -13,6 +15,34 @@ from modules.roi_calculator import ROICalculator
 from modules.uk_programmes import get_programmes_for_pathway
 from modules.uk_careers import get_careers_for_field
 
+# ============= GOOGLE SHEETS INTEGRATION =============
+# Replace this URL with your Google Apps Script Web App URL
+GOOGLE_SHEETS_URL = "https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec"
+
+def capture_email_to_sheet(email, name="", interest="", budget="", capture_point="", recommended_pathway="", roi_result=""):
+    """Send email data to Google Sheets"""
+    try:
+        payload = {
+            "email": email,
+            "name": name,
+            "interest": interest,
+            "budget": budget,
+            "capture_point": capture_point,
+            "recommended_pathway": recommended_pathway,
+            "roi_result": roi_result
+        }
+        
+        response = requests.post(
+            GOOGLE_SHEETS_URL,
+            data=json.dumps(payload),
+            headers={'Content-Type': 'application/json'}
+        )
+        
+        return response.status_code == 200
+    except Exception as e:
+        print(f"Error capturing email: {e}")
+        return False
+
 # Page config
 st.set_page_config(
     page_title="Education Path Finder",
@@ -20,6 +50,45 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="collapsed"
 )
+
+# ============= GOOGLE ANALYTICS 4 =============
+# Replace with your GA4 Measurement ID from Google Analytics
+GA_MEASUREMENT_ID = "G-XXXXXXXXXX"  # TODO: Replace this!
+
+# Only load GA4 if user has accepted analytics cookies
+if GA_MEASUREMENT_ID != "G-XXXXXXXXXX" and st.session_state.get('analytics_enabled', False):
+    st.markdown(f"""
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id={GA_MEASUREMENT_ID}"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){{dataLayer.push(arguments);}}
+      gtag('js', new Date());
+      gtag('config', '{GA_MEASUREMENT_ID}', {{
+        'anonymize_ip': true,
+        'cookie_flags': 'SameSite=None;Secure'
+      }});
+    </script>
+    """, unsafe_allow_html=True)
+
+def track_event(event_name, event_params=None):
+    """Track custom events in GA4 - only if analytics enabled"""
+    if GA_MEASUREMENT_ID == "G-XXXXXXXXXX":
+        return  # Skip if GA not configured
+    
+    if not st.session_state.get('analytics_enabled', False):
+        return  # Skip if user hasn't consented to analytics
+    
+    if event_params is None:
+        event_params = {}
+    
+    params_str = ", ".join([f"'{k}': '{v}'" for k, v in event_params.items()])
+    
+    st.markdown(f"""
+    <script>
+      gtag('event', '{event_name}', {{{params_str}}});
+    </script>
+    """, unsafe_allow_html=True)
 
 # Custom CSS - Airbnb style
 st.markdown("""
@@ -109,6 +178,104 @@ def initialize_session_state():
         st.session_state.user_data = {}
     if 'assessment_scores' not in st.session_state:
         st.session_state.assessment_scores = {}
+    if 'cookies_accepted' not in st.session_state:
+        st.session_state.cookies_accepted = False
+    if 'analytics_enabled' not in st.session_state:
+        st.session_state.analytics_enabled = False
+
+def render_cookie_banner():
+    """Render GDPR-compliant cookie consent banner"""
+    if not st.session_state.cookies_accepted:
+        st.markdown("""
+        <div style="
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #222222;
+            color: white;
+            padding: 1.5rem;
+            z-index: 9999;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.3);
+        ">
+            <div style="max-width: 1200px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+                <div style="flex: 1; min-width: 300px;">
+                    <strong>🍪 We use cookies</strong><br>
+                    <span style="font-size: 0.9rem; color: #ccc;">
+                        We use necessary cookies for site functionality and optional analytics cookies to improve our service.
+                        See our <a href="#privacy-policy" style="color: #4fc3f7; text-decoration: underline;">Privacy Policy</a>.
+                    </span>
+                </div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        col1, col2, col3 = st.columns([1, 1, 1])
+        
+        with col1:
+            if st.button("✅ Accept All", key="accept_all_cookies", type="primary"):
+                st.session_state.cookies_accepted = True
+                st.session_state.analytics_enabled = True
+                st.rerun()
+        
+        with col2:
+            if st.button("⚙️ Necessary Only", key="necessary_only_cookies"):
+                st.session_state.cookies_accepted = True
+                st.session_state.analytics_enabled = False
+                st.rerun()
+        
+        with col3:
+            if st.button("❌ Reject All", key="reject_all_cookies"):
+                st.session_state.cookies_accepted = True
+                st.session_state.analytics_enabled = False
+                st.rerun()
+
+def render_privacy_policy_link():
+    """Render privacy policy and terms links in footer"""
+    st.markdown("""
+    <div style="
+        text-align: center;
+        padding: 2rem 0 1rem 0;
+        border-top: 1px solid #EBEBEB;
+        margin-top: 3rem;
+        font-size: 0.85rem;
+        color: #717171;
+    ">
+    </div>
+    """, unsafe_allow_html=True)
+    
+    col1, col2, col3, col4 = st.columns(4)
+    
+    with col1:
+        if st.button("Privacy Policy", key="privacy_footer", use_container_width=True):
+            st.switch_page("pages/Privacy_Policy.py")
+    
+    with col2:
+        if st.button("Terms of Service", key="terms_footer", use_container_width=True):
+            st.info("Terms coming soon")
+    
+    with col3:
+        if st.button("Cookie Settings", key="cookies_footer", use_container_width=True):
+            st.session_state.cookies_accepted = False
+            st.rerun()
+    
+    with col4:
+        st.markdown("""
+        <a href="mailto:your.email@example.com" style="
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            text-decoration: none;
+            color: #717171;
+            text-align: center;
+            width: 100%;
+        ">Contact</a>
+        """, unsafe_allow_html=True)
+    
+    st.markdown("""
+    <div style="text-align: center; font-size: 0.75rem; color: #999; margin-top: 1rem;">
+        © 2025 Education Path Finder. Registered in England and Wales. ICO: [Your Number]
+    </div>
+    """, unsafe_allow_html=True)
 
 def render_hero_landing():
     """Render Airbnb-style landing page"""
@@ -166,6 +333,13 @@ def render_hero_landing():
     if search_clicked:
         if name and interest_input and budget_input:
             budget_map = {"Under £10,000": 8000, "£10,000 - £30,000": 20000, "£30,000 - £50,000": 40000, "£50,000 - £75,000": 62500, "Over £75,000": 90000}
+            
+            # Track assessment started
+            track_event('assessment_started', {
+                'interest': interest_input,
+                'budget_range': budget_input
+            })
+            
             st.session_state.user_data = {
                 'name': name,
                 'age': 20,
@@ -218,10 +392,45 @@ def render_hero_landing():
             key="early_email_capture"
         )
         
+        # GDPR Consent Checkboxes
+        email_consent = st.checkbox(
+            "I agree to receive my assessment results and educational programme recommendations via email",
+            key="landing_email_consent"
+        )
+        
+        marketing_consent = st.checkbox(
+            "I'd like to receive scholarship opportunities and education news (optional)",
+            key="landing_marketing_consent"
+        )
+        
+        st.markdown("""
+        <div style="font-size: 0.75rem; color: #717171; margin-top: 0.5rem;">
+            By submitting, you agree to our <a href="#privacy-policy" style="color: #4fc3f7;">Privacy Policy</a>. 
+            You can unsubscribe anytime. We never sell your data.
+        </div>
+        """, unsafe_allow_html=True)
+        
         if st.button("✨ Get Started Free", type="primary", width='stretch', key="email_submit"):
-            if early_email and "@" in early_email:
+            if not email_consent:
+                st.error("Please agree to receive your assessment results to continue")
+            elif early_email and "@" in early_email:
+                # Capture to Google Sheets with consent flags
+                success = capture_email_to_sheet(
+                    email=early_email,
+                    name=name if name else "",
+                    interest=interest_input if interest_input else "",
+                    budget=budget_input if budget_input else "",
+                    capture_point="landing_page_with_consent",
+                    recommended_pathway=f"Consent: {email_consent}, Marketing: {marketing_consent}",
+                    roi_result=""
+                )
+                
                 st.session_state['user_email'] = early_email
+                st.session_state['marketing_consent'] = marketing_consent
                 st.success("✅ Email saved! Scroll up to start your assessment")
+                
+                if not success:
+                    st.warning("Note: Email saved locally but may not have synced to our system")
             else:
                 st.error("Please enter a valid email")
     
@@ -314,6 +523,13 @@ def render_assessment():
             scores = assessment.calculate_scores(responses)
             st.session_state.assessment_scores = scores
             st.session_state.assessment_complete = True
+            
+            # Track assessment completion
+            track_event('assessment_completed', {
+                'grit_score': str(scores['grit']),
+                'hands_on_score': str(scores['hands_on'])
+            })
+            
             st.rerun()
 
 def render_results():
@@ -503,12 +719,54 @@ def render_results():
             value=st.session_state.get('user_email', '')
         )
         
+        # GDPR Consent Checkboxes
+        results_consent = st.checkbox(
+            "I agree to receive my full report and programme recommendations via email",
+            value=True,  # Default checked since they already gave consent
+            key="results_email_consent"
+        )
+        
+        results_marketing = st.checkbox(
+            "Yes, send me scholarship deadlines and education opportunities (optional)",
+            value=st.session_state.get('marketing_consent', False),
+            key="results_marketing_consent"
+        )
+        
+        st.markdown("""
+        <div style="font-size: 0.75rem; color: rgba(255,255,255,0.8); margin-top: 0.5rem; text-align: center;">
+            See our <a href="#privacy-policy" style="color: #4fc3f7;">Privacy Policy</a>. 
+            Unsubscribe anytime. Your data is secure and never sold.
+        </div>
+        """, unsafe_allow_html=True)
+        
         if st.button("📨 Email Me My Full Report", type="primary", width='stretch', key="send_report"):
-            if email and "@" in email:
+            if not results_consent:
+                st.error("Please agree to receive your report to continue")
+            elif email and "@" in email:
+                # Capture to Google Sheets with full context and consent
+                success = capture_email_to_sheet(
+                    email=email,
+                    name=user_data.get('name', ''),
+                    interest=user_data['interests'][0] if user_data.get('interests') else '',
+                    budget=str(user_data.get('budget', '')),
+                    capture_point="results_page_with_consent",
+                    recommended_pathway=f"{recommendation['pathway']} | Consent: {results_consent}, Marketing: {results_marketing}",
+                    roi_result=f"£{recommended_roi['net_wealth_year_5']:,.0f}"
+                )
+                
                 st.success("✅ Report sent! Check your inbox in the next few minutes.")
                 st.balloons()
-                # TODO: Actually send the email / save to database
                 st.session_state['user_email'] = email
+                st.session_state['marketing_consent'] = results_marketing
+                
+                # Track email capture event
+                track_event('email_captured', {
+                    'capture_point': 'results_page',
+                    'marketing_consent': str(results_marketing)
+                })
+                
+                if not success:
+                    st.warning("Note: You'll receive your report, but it may take a bit longer to process")
             else:
                 st.error("Please enter a valid email address")
     
@@ -539,12 +797,19 @@ def render_results():
 def main():
     initialize_session_state()
     
+    # Render cookie consent banner (GDPR requirement)
+    render_cookie_banner()
+    
+    # Main content flow
     if not st.session_state.user_data:
         render_hero_landing()
     elif not st.session_state.assessment_complete:
         render_assessment()
     else:
         render_results()
+    
+    # Privacy policy footer (always visible)
+    render_privacy_policy_link()
 
 if __name__ == "__main__":
     main()
