@@ -159,7 +159,7 @@ def render_hero_landing():
     
     with col4:
         st.markdown("<br>", unsafe_allow_html=True)
-        search_clicked = st.button("🔍 Search", type="primary", use_container_width=True)
+        search_clicked = st.button("🔍 Search", type="primary", width='stretch')
     
     st.markdown("</div></div>", unsafe_allow_html=True)
     
@@ -218,7 +218,7 @@ def render_hero_landing():
             key="early_email_capture"
         )
         
-        if st.button("✨ Get Started Free", type="primary", use_container_width=True, key="email_submit"):
+        if st.button("✨ Get Started Free", type="primary", width='stretch', key="email_submit"):
             if early_email and "@" in early_email:
                 st.session_state['user_email'] = early_email
                 st.success("✅ Email saved! Scroll up to start your assessment")
@@ -308,7 +308,7 @@ def render_assessment():
                 label_visibility="collapsed"
             )
         
-        submitted = st.form_submit_button("📊 Get My Results", type="primary", use_container_width=True)
+        submitted = st.form_submit_button("📊 Get My Results", type="primary", width='stretch')
         
         if submitted:
             scores = assessment.calculate_scores(responses)
@@ -391,7 +391,7 @@ def render_results():
     )
     fig.add_hline(y=0, line_dash="dash", line_color="black", opacity=0.5)
     
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width='stretch')
     
     # Detailed table with £
     st.markdown("### 📈 Pathway Comparison")
@@ -400,8 +400,10 @@ def render_results():
     display_df['year_5_salary'] = display_df['year_5_salary'].apply(lambda x: f"£{x:,.0f}")
     display_df['net_wealth_year_5'] = display_df['net_wealth_year_5'].apply(lambda x: f"£{x:,.0f}")
     display_df['roi_multiple'] = display_df['roi_multiple'].apply(lambda x: f"{x:.2f}x")
-    display_df.columns = ['Total Cost', 'Year 5 Salary', 'Net Wealth', 'ROI Multiple']
-    st.dataframe(display_df, use_container_width=True)
+    display_df['total_earnings_5yr'] = display_df['total_earnings_5yr'].apply(lambda x: f"£{x:,.0f}")
+    display_df['education_duration'] = display_df['education_duration'].apply(lambda x: f"{x} years")
+    display_df.columns = ['Total Cost', 'Year 5 Salary', 'Net Wealth', 'ROI Multiple', 'Total Earnings (5yr)', 'Duration']
+    st.dataframe(display_df, width='stretch')
     
     # Warnings with £
     recommended_roi = roi_data[recommendation['pathway']]
@@ -441,7 +443,7 @@ def render_results():
                     if 'ranking' in prog:
                         st.info(f"🏆 {prog['ranking']}")
                     
-                    st.link_button("📝 Apply Now", prog['application_link'], use_container_width=True)
+                    st.link_button("📝 Apply Now", prog['application_link'], width='stretch')
     else:
         st.info("Programme database coming soon for this pathway.")
     
@@ -501,7 +503,7 @@ def render_results():
             value=st.session_state.get('user_email', '')
         )
         
-        if st.button("📨 Email Me My Full Report", type="primary", use_container_width=True, key="send_report"):
+        if st.button("📨 Email Me My Full Report", type="primary", width='stretch', key="send_report"):
             if email and "@" in email:
                 st.success("✅ Report sent! Check your inbox in the next few minutes.")
                 st.balloons()
@@ -522,15 +524,15 @@ def render_results():
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        if st.button("📄 Download Full Report (PDF)", use_container_width=True):
+        if st.button("📄 Download Full Report (PDF)", width='stretch'):
             st.info("PDF download coming soon!")
     
     with col2:
-        if st.button("💬 Book Free Consultation", use_container_width=True):
+        if st.button("💬 Book Free Consultation", width='stretch'):
             st.info("Booking system coming soon!")
     
     with col3:
-        if st.button("🔄 Start New Assessment", use_container_width=True):
+        if st.button("🔄 Start New Assessment", width='stretch'):
             st.session_state.clear()
             st.rerun()
 
