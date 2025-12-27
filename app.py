@@ -1024,7 +1024,7 @@ def render_results():
             
             # Store in session state (will be sent to Google Sheets)
             st.session_state['outcome_tracking_data'] = tracking_data
-            st.session_state['outcome_tracking_consent'] = True
+            # Note: outcome_tracking_consent is already set by the checkbox above
     
     st.markdown("""
     </div>
